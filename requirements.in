@@ -1,1 +1,6 @@
 pytest
+requests
+pandas
+pydantic
+pydantic_settings
+beautifulsoup4
