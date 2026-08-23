@@ -11,7 +11,7 @@ logger = logging.getLogger("quant.pipeline.flow.extract")
 
 def get_authenticated_flow_session(config: MainConfig) -> requests.Session:
     """
-    Creates an authenticated requests.Session for TradingEdge Flow.
+    Creates an authenticated requests.Session for TradingEdge Flow using ASP.NET ViewState & m_userName.
     """
     session = requests.Session()
     session.headers.update({
@@ -23,20 +23,24 @@ def get_authenticated_flow_session(config: MainConfig) -> requests.Session:
     te_pass = config.te_pass.get_secret_value() if hasattr(config.te_pass, "get_secret_value") else str(config.te_pass)
     
     try:
-        r_gate = session.get(login_url, timeout=15)
-        soup = BeautifulSoup(r_gate.text, "html.parser")
+        r_get = session.get(login_url, timeout=15)
+        soup = BeautifulSoup(r_get.text, "html.parser")
         
-        payload = {}
-        for input_tag in soup.find_all("input"):
-            name = input_tag.get("name")
-            if name:
-                payload[name] = input_tag.get("value", "")
-                
-        for k in payload:
-            if "pass" in k.lower() or "txt" in k.lower():
-                payload[k] = te_pass
-                
-        session.post(login_url, data=payload, timeout=15)
+        viewstate = soup.find("input", id="__VIEWSTATE")
+        viewstate_gen = soup.find("input", id="__VIEWSTATEGENERATOR")
+        event_val = soup.find("input", id="__EVENTVALIDATION")
+        
+        payload = {
+            "__VIEWSTATE": viewstate.get("value", "") if viewstate else "",
+            "__VIEWSTATEGENERATOR": viewstate_gen.get("value", "") if viewstate_gen else "",
+            "__EVENTVALIDATION": event_val.get("value", "") if event_val else "",
+            "m_userName": te_pass,
+            "m_btnLogin": "Confirm Identity"
+        }
+        
+        post_url = "https://flow.tradingedge.club" + r_get.url.split("tradingedge.club")[-1]
+        session.post(post_url, data=payload, timeout=15)
+        logger.info("Successfully authenticated with TradingEdge Flow gate.")
     except Exception as ex:
         logger.warning(f"Flow login gate encounter: {ex}")
         
@@ -74,6 +78,9 @@ def parse_html_flow_table(html_content: str, symbol: Optional[str] = None) -> tu
         
         raw_trade_date = texts[0]
         raw_order_type = texts[1]
+        # Clean prefix like 'CBuy Call' -> 'Buy Call' or 'PBuy Put' -> 'Buy Put'
+        clean_order_type = re.sub(r"^[CP]", "", raw_order_type).strip() if raw_order_type else "Buy Call"
+        
         raw_symbol = texts[2] if len(texts) > 2 else (symbol or "")
         raw_strike = texts[3] if len(texts) > 3 else ""
         raw_exp = texts[4] if len(texts) > 4 else ""
@@ -84,7 +91,7 @@ def parse_html_flow_table(html_content: str, symbol: Optional[str] = None) -> tu
         
         records.append({
             "trade_date": raw_trade_date,
-            "order_type": raw_order_type,
+            "order_type": clean_order_type,
             "symbol": raw_symbol or symbol,
             "strike": raw_strike,
             "exp": raw_exp,
@@ -98,10 +105,10 @@ def parse_html_flow_table(html_content: str, symbol: Optional[str] = None) -> tu
 
 def extract_flow_for_symbol(config: MainConfig, symbol: str, cutoff_date: Optional[date] = None, session: Optional[requests.Session] = None) -> List[Dict[str, Any]]:
     """
-    Fetches raw flow records for a single symbol from TradingEdge Flow.
+    Fetches raw flow records for a single symbol from TradingEdge Flow (Symbol.aspx?Id={symbol}).
     """
     sess = session or get_authenticated_flow_session(config)
-    url = f"https://flow.tradingedge.club/Symbol/{symbol.strip().upper()}"
+    url = f"https://flow.tradingedge.club/Symbol.aspx?Id={symbol.strip().upper()}"
     
     try:
         resp = sess.get(url, timeout=20)

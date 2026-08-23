@@ -1,4 +1,4 @@
-﻿import hashlib
+import hashlib
 import logging
 import re
 from datetime import datetime, date
@@ -119,6 +119,13 @@ def transform_flow_records(raw_records: List[Dict[str, Any]], net_score: Optiona
         # Premium
         premium_val = parse_premium_str(item.get("premium"))
         
+        raw_score = item.get("net_score") if item.get("net_score") is not None else net_score
+        net_score_val = float(raw_score) if raw_score is not None else 0.0
+        
+        # Skip empty/footer rows
+        if stk_val <= 0 and premium_val <= 0:
+            continue
+
         row_dict = {
             "trade_date": trade_date_val,
             "symbol": symbol,
@@ -129,7 +136,7 @@ def transform_flow_records(raw_records: List[Dict[str, Any]], net_score: Optiona
             "open_interest": open_interest_val,
             "is_unusual_oi": is_unusual,
             "premium": premium_val,
-            "net_score": float(item.get("net_score", net_score or 0.0)),
+            "net_score": net_score_val,
             "created_at": now_ts
         }
         row_dict["flow_id"] = generate_flow_id(row_dict)
