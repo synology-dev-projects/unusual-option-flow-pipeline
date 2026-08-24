@@ -59,14 +59,14 @@ jobs:
  
           # Copy NEW files to the persistent project root
           echo "🚀 Copying new files..."
-          cp -r common_lib "$TARGET_PATH/"
+          cp -r src "$TARGET_PATH/"
           cp -r tests "$TARGET_PATH/"
-          cp verify.sh "$TARGET_PATH/"
-          cp pyproject.toml "$TARGET_PATH/"
+          [ -f verify.sh ] && cp verify.sh "$TARGET_PATH/"
+          [ -f pyproject.toml ] && cp pyproject.toml "$TARGET_PATH/"
+          [ -f pytest.ini ] && cp pytest.ini "$TARGET_PATH/"
           
           sudo chown -R 1026:100 "$TARGET_PATH"
           chmod -R 775 "$TARGET_PATH"
-          
           
           # Copy requirement files if they exist
           [ -f requirements.txt ] && cp requirements.txt "$TARGET_PATH/"
