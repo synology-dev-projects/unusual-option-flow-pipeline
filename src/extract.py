@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import re
 from datetime import datetime, date, timedelta
 from typing import List, Dict, Any, Optional
@@ -129,3 +129,40 @@ def extract_flow_for_symbol(config: MainConfig, symbol: str, cutoff_date: Option
     except Exception as ex:
         logger.error(f"Error fetching flow for {symbol}: {ex}")
     return []
+
+BENCHMARK_UNIVERSE: List[str] = [
+    "SPY", "QQQ", "IWM", "NVDA", "AAPL", "TSLA", "META", "AMZN", "GOOGL", "MSFT",
+    "PLTR", "AMD", "TSM", "SMCI", "COIN", "CRWD", "NFLX", "AVGO", "ARM", "MSTR"
+]
+
+def extract_all_displayed_symbols(config: MainConfig, session: Optional[requests.Session] = None) -> List[str]:
+    """
+    Scrapes TradingEdge Flow default and stats pages to extract all currently displayed ticker symbols.
+    Combines with BENCHMARK_UNIVERSE and returns a deduplicated, sorted list of upper-cased tickers.
+    """
+    sess = session or get_authenticated_flow_session(config)
+    symbols_set = set(BENCHMARK_UNIVERSE)
+    
+    scrape_urls = [
+        "https://flow.tradingedge.club/default.aspx",
+        "https://flow.tradingedge.club/Stats.aspx?Stat=Premium&Days=30",
+        "https://flow.tradingedge.club/Stats.aspx?Stat=Bull&Days=30",
+        "https://flow.tradingedge.club/Stats.aspx?Stat=Bear&Days=30",
+    ]
+    
+    for url in scrape_urls:
+        try:
+            resp = sess.get(url, timeout=20)
+            if resp.status_code == 200:
+                matches = re.findall(r"Symbol\.aspx\?Id=([A-Za-z0-9_\-\.]+)", resp.text, flags=re.IGNORECASE)
+                for m in matches:
+                    clean = m.strip().upper().replace("$", "")
+                    if clean:
+                        symbols_set.add(clean)
+            else:
+                logger.warning(f"Failed to fetch {url} (status code: {resp.status_code})")
+        except Exception as ex:
+            logger.warning(f"Error scraping symbols from {url}: {ex}")
+            
+    return sorted(list(symbols_set))
+

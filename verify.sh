@@ -19,3 +19,6 @@ echo "📂 PYTHONPATH set to: $PYTHONPATH"
 
 # Run pytest using the 'python -m' syntax
 python -m pytest -v -ra --showlocals tests/
+
+echo "🚀 Running Vertical Slice In-Situ Tester..."
+python src/scripts/verify_vertical.py
