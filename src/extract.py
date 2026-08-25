@@ -103,17 +103,33 @@ def parse_html_flow_table(html_content: str, symbol: Optional[str] = None) -> tu
         
     return records, net_score
 
-def extract_flow_for_symbol(config: MainConfig, symbol: str, cutoff_date: Optional[date] = None, session: Optional[requests.Session] = None) -> List[Dict[str, Any]]:
+def extract_flow_for_symbol(
+    config: MainConfig, 
+    symbol: str, 
+    cutoff_date: Optional[date] = None, 
+    days: Optional[int] = None,
+    session: Optional[requests.Session] = None
+) -> List[Dict[str, Any]]:
     """
-    Fetches raw flow records for a single symbol from TradingEdge Flow (Symbol.aspx?Id={symbol}).
+    Fetches raw flow records for a single symbol from TradingEdge Flow (Symbol.aspx?Id={symbol}&Days={lookback_days}).
     """
     sess = session or get_authenticated_flow_session(config)
-    url = f"https://flow.tradingedge.club/Symbol.aspx?Id={symbol.strip().upper()}"
+    sym = symbol.strip().upper()
+    
+    if days is not None:
+        lookback_days = days
+    elif cutoff_date is not None:
+        delta = (date.today() - cutoff_date).days
+        lookback_days = max(delta + 5, 30)
+    else:
+        lookback_days = 730
+        
+    url = f"https://flow.tradingedge.club/Symbol.aspx?Id={sym}&Days={lookback_days}"
     
     try:
         resp = sess.get(url, timeout=20)
         if resp.status_code == 200:
-            records, score = parse_html_flow_table(resp.text, symbol=symbol.strip().upper())
+            records, score = parse_html_flow_table(resp.text, symbol=sym)
             
             if cutoff_date:
                 filtered = []

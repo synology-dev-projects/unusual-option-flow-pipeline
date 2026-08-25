@@ -104,7 +104,7 @@ def run_manual_historical(
         all_raw_records = []
         for sym in target_symbols:
             logger.info(f"Fetching historical flow for {sym}...")
-            recs = extract.extract_flow_for_symbol(config, sym, cutoff_date=cutoff_date, session=session)
+            recs = extract.extract_flow_for_symbol(config, sym, cutoff_date=cutoff_date, days=days or 730, session=session)
             if recs:
                 logger.info(f"  -> Retrieved {len(recs)} flow records for {sym}.")
                 all_raw_records.extend(recs)
