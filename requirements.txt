@@ -58,3 +58,12 @@ typing-inspection==0.4.2
     #   pydantic-settings
 urllib3==2.7.0
     # via requests
+psycopg==3.2.3
+    # via -r requirements.in
+psycopg-binary==3.2.3
+    # via -r requirements.in
+sqlalchemy==2.0.38
+    # via -r requirements.in
+typing-extensions>=4.6.0
+    # via sqlalchemy
+
