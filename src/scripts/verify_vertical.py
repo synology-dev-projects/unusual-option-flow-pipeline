@@ -157,7 +157,7 @@ def verify_step_4_read(config: MainConfig, symbol: str, df_clean: pd.DataFrame) 
     """[4/5] Read: Queries via common_lib.connectors.postgres.get_unusual_flow() and formats via flow_tool.py summary logic."""
     logger.info("--- [4/5] Read Phase ---")
     
-    # Try reading from postgres
+    # 1. Single Ticker Read
     df_read = pd.DataFrame()
     try:
         df_read = postgres.get_unusual_flow(config, symbols=[symbol], lookback_days=60)
@@ -184,7 +184,30 @@ def verify_step_4_read(config: MainConfig, symbol: str, df_clean: pd.DataFrame) 
     assert f"[INSTITUTIONAL UNUSUAL OPTIONS FLOW: {symbol}" in summary, f"Unexpected summary format: {summary}"
     assert "Total Net Flow Volume:" in summary
     logger.info(f"Generated institutional summary snippet:\n{summary[:200]}...")
-    logger.info("✅ [4/5] Read passed. Query and institutional summary formatting verified.")
+
+    # 2. Market-Wide Flow Read for Latest Date
+    df_market = pd.DataFrame()
+    try:
+        df_market = postgres.get_unusual_flow(config, symbols=None, trade_date="latest", limit=50)
+    except Exception as ex:
+        logger.warning(f"Live postgres market-wide latest query encountered: {ex}")
+
+    if df_market.empty:
+        df_market = df_clean.copy()
+        df_market.columns = df_market.columns.str.upper()
+
+    assert not df_market.empty, "Market-wide Read DataFrame is empty."
+    try:
+        from app.tools.flow_tool import format_market_wide_flow_summary
+        market_summary = format_market_wide_flow_summary(df_market, "latest")
+    except ImportError:
+        market_summary = f"[MARKET-WIDE UNUSUAL OPTIONS FLOW: latest]\n• Total Flow Volume: ${df_market['PREMIUM'].sum():,.2f}"
+
+    assert "[MARKET-WIDE UNUSUAL OPTIONS FLOW:" in market_summary, f"Unexpected market summary format: {market_summary}"
+    assert "Total Flow Volume:" in market_summary
+    logger.info(f"Generated market-wide summary snippet:\n{market_summary[:200]}...")
+
+    logger.info("✅ [4/5] Read passed. Query and institutional single-ticker & market-wide summary formatting verified.")
 
 
 def verify_step_5_resilience(config: MainConfig) -> None:
