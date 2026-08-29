@@ -93,6 +93,8 @@ def transform_flow_records(raw_records: List[Dict[str, Any]], net_score: Optiona
                 trade_date_val = pd.to_datetime(str(raw_trade_date)).date()
             except Exception:
                 trade_date_val = datetime.now().date()
+        if trade_date_val.year > 2100 or trade_date_val.year < 2000:
+            trade_date_val = trade_date_val.replace(year=2000 + (trade_date_val.year % 100))
         
         # Expiration date parsing
         raw_exp = item.get("exp") or item.get("expiration_date")
@@ -103,6 +105,8 @@ def transform_flow_records(raw_records: List[Dict[str, Any]], net_score: Optiona
                 exp_date_val = pd.to_datetime(str(raw_exp)).date()
             except Exception:
                 exp_date_val = trade_date_val
+        if exp_date_val.year > 2100 or exp_date_val.year < 2000:
+            exp_date_val = exp_date_val.replace(year=2000 + (exp_date_val.year % 100))
         
         # Strike & OTM
         stk_val, otm_pct = parse_strike_and_otm(item.get("strike") or item.get("strike_price"))

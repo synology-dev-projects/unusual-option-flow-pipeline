@@ -249,8 +249,8 @@ def verify_step_5_resilience(config: MainConfig) -> None:
         pass
         
 def verify_step_6_client_ui(config: MainConfig) -> None:
-    """[6/6] Client UI: Runs in-situ Node.js DOM test suite for sortable paginated Bloomberg table."""
-    logger.info("--- [6/6] Client UI Interactive Table Phase ---")
+    """[6/7] Client UI: Runs in-situ Node.js DOM test suite for sortable paginated Bloomberg table."""
+    logger.info("--- [6/7] Client UI Interactive Table Phase ---")
     import subprocess
     ui_test_path = PROJECT_ROOT.parent / "quant-pwa" / "frontend" / "tests" / "test_vertical_table_ui.js"
     if not ui_test_path.exists():
@@ -262,13 +262,30 @@ def verify_step_6_client_ui(config: MainConfig) -> None:
         logger.error(f"UI Table DOM Test Failed:\n{result.stderr}\n{result.stdout}")
         raise RuntimeError(f"Client UI DOM test failed with code {result.returncode}")
 
-    logger.info("✅ [6/6] Client UI passed. Verified 31 DOM assertions (Tri-state sorting, secondary tie-breaker, pagination).")
+    logger.info("✅ [6/7] Client UI passed. Verified 36 DOM assertions (Tri-state sorting, secondary tie-breaker, pagination).")
+
+
+def verify_step_7_cockpit_ui(config: MainConfig) -> None:
+    """[7/7] Ticker Cockpit: Runs in-situ Node.js DOM test suite for 3-panel dashboard."""
+    logger.info("--- [7/7] Ticker Cockpit 3-Panel Dashboard Phase ---")
+    import subprocess
+    cockpit_test_path = PROJECT_ROOT.parent / "quant-pwa" / "frontend" / "tests" / "test_cockpit_view.js"
+    if not cockpit_test_path.exists():
+        logger.warning(f"Cockpit test script not found at {cockpit_test_path}. Skipping.")
+        return
+
+    result = subprocess.run(["node", str(cockpit_test_path)], capture_output=True, text=True)
+    if result.returncode != 0:
+        logger.error(f"Cockpit UI Test Failed:\n{result.stderr}\n{result.stdout}")
+        raise RuntimeError(f"Cockpit UI test failed with code {result.returncode}")
+
+    logger.info("✅ [7/7] Ticker Cockpit passed. Verified 49 DOM assertions (Search bar, 3-panel layout, GEX/DEX toggle, flow filters).")
 
 
 def run_vertical_slice_test() -> int:
-    """Executes all 6 steps of the Vertical Slice In-Situ Tester."""
+    """Executes all 7 steps of the Vertical Slice In-Situ Tester."""
     logger.info("================================================================")
-    logger.info("🚀 Starting 6-Layer Vertical Slice In-Situ Tester (FLOW-08)...")
+    logger.info("🚀 Starting 7-Layer Vertical Slice In-Situ Tester (COCKPIT-01)...")
     logger.info("================================================================")
     
     try:
@@ -291,9 +308,12 @@ def run_vertical_slice_test() -> int:
 
         # Step 6: Client UI Interactive Table
         verify_step_6_client_ui(config)
+
+        # Step 7: Ticker Cockpit 3-Panel Dashboard
+        verify_step_7_cockpit_ui(config)
         
         logger.info("================================================================")
-        logger.info("🎉 ALL 6 VERTICAL SLICE PHASES PASSED IN-SITU!")
+        logger.info("🎉 ALL 7 VERTICAL SLICE PHASES PASSED IN-SITU!")
         logger.info("================================================================")
         return 0
     except Exception as ex:
