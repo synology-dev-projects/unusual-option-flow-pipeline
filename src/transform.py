@@ -65,6 +65,39 @@ def generate_flow_id(row: Dict[str, Any]) -> str:
     )
     return hashlib.sha256(raw_str.encode("utf-8")).hexdigest()[:32]
 
+def parse_date_val(raw_val: Any, default_val: Optional[date] = None) -> date:
+    if raw_val is None or pd.isna(raw_val):
+        return default_val or datetime.now().date()
+    if isinstance(raw_val, (datetime, pd.Timestamp)):
+        return raw_val.date()
+    if isinstance(raw_val, date):
+        return raw_val
+    
+    s = str(raw_val).strip()
+    if not s or s.lower() in ("none", "nan", "null"):
+        return default_val or datetime.now().date()
+        
+    # Handle Excel serial day numbers (e.g. 46261 -> 2026-08-27)
+    try:
+        num = float(s)
+        if 35000 <= num <= 60000:
+            return (datetime(1899, 12, 30) + timedelta(days=num)).date()
+    except (ValueError, TypeError):
+        pass
+
+    try:
+        parsed = pd.to_datetime(s, errors="coerce")
+        if pd.notna(parsed):
+            d = parsed.date()
+            if 2000 <= d.year <= 2100:
+                return d
+            elif d.year > 2100 or d.year < 2000:
+                return d.replace(year=2000 + (d.year % 100))
+    except Exception:
+        pass
+
+    return default_val or datetime.now().date()
+
 def transform_flow_records(raw_records: List[Dict[str, Any]], net_score: Optional[float] = None) -> pd.DataFrame:
     """
     Transforms raw scraped flow items into the normalized UNUSUAL_OPTION_FLOW_TE DataFrame.
@@ -85,28 +118,11 @@ def transform_flow_records(raw_records: List[Dict[str, Any]], net_score: Optiona
             continue
         
         # Trade date parsing
-        raw_trade_date = item.get("trade_date")
-        if isinstance(raw_trade_date, (datetime, date)):
-            trade_date_val = raw_trade_date if isinstance(raw_trade_date, date) else raw_trade_date.date()
-        else:
-            try:
-                trade_date_val = pd.to_datetime(str(raw_trade_date)).date()
-            except Exception:
-                trade_date_val = datetime.now().date()
-        if trade_date_val.year > 2100 or trade_date_val.year < 2000:
-            trade_date_val = trade_date_val.replace(year=2000 + (trade_date_val.year % 100))
+        trade_date_val = parse_date_val(item.get("trade_date"))
         
         # Expiration date parsing
         raw_exp = item.get("exp") or item.get("expiration_date")
-        if isinstance(raw_exp, (datetime, date)):
-            exp_date_val = raw_exp if isinstance(raw_exp, date) else raw_exp.date()
-        else:
-            try:
-                exp_date_val = pd.to_datetime(str(raw_exp)).date()
-            except Exception:
-                exp_date_val = trade_date_val
-        if exp_date_val.year > 2100 or exp_date_val.year < 2000:
-            exp_date_val = exp_date_val.replace(year=2000 + (exp_date_val.year % 100))
+        exp_date_val = parse_date_val(raw_exp, default_val=trade_date_val)
         
         # Strike & OTM
         stk_val, otm_pct = parse_strike_and_otm(item.get("strike") or item.get("strike_price"))
