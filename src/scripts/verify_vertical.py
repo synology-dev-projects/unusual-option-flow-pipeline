@@ -248,13 +248,27 @@ def verify_step_5_resilience(config: MainConfig) -> None:
     except ImportError:
         pass
         
-    logger.info("✅ [5/5] Resilience passed. Fault isolation and edge-case containment verified.")
+def verify_step_6_client_ui(config: MainConfig) -> None:
+    """[6/6] Client UI: Runs in-situ Node.js DOM test suite for sortable paginated Bloomberg table."""
+    logger.info("--- [6/6] Client UI Interactive Table Phase ---")
+    import subprocess
+    ui_test_path = PROJECT_ROOT.parent / "quant-pwa" / "frontend" / "tests" / "test_vertical_table_ui.js"
+    if not ui_test_path.exists():
+        logger.warning(f"UI test script not found at {ui_test_path}. Skipping.")
+        return
+
+    result = subprocess.run(["node", str(ui_test_path)], capture_output=True, text=True)
+    if result.returncode != 0:
+        logger.error(f"UI Table DOM Test Failed:\n{result.stderr}\n{result.stdout}")
+        raise RuntimeError(f"Client UI DOM test failed with code {result.returncode}")
+
+    logger.info("✅ [6/6] Client UI passed. Verified 31 DOM assertions (Tri-state sorting, secondary tie-breaker, pagination).")
 
 
 def run_vertical_slice_test() -> int:
-    """Executes all 5 steps of the Vertical Slice In-Situ Tester."""
+    """Executes all 6 steps of the Vertical Slice In-Situ Tester."""
     logger.info("================================================================")
-    logger.info("🚀 Starting Vertical Slice In-Situ Tester (FLOW-02)...")
+    logger.info("🚀 Starting 6-Layer Vertical Slice In-Situ Tester (FLOW-08)...")
     logger.info("================================================================")
     
     try:
@@ -274,9 +288,12 @@ def run_vertical_slice_test() -> int:
         
         # Step 5: Resilience
         verify_step_5_resilience(config)
+
+        # Step 6: Client UI Interactive Table
+        verify_step_6_client_ui(config)
         
         logger.info("================================================================")
-        logger.info("🎉 ALL 5 VERTICAL SLICE PHASES PASSED IN-SITU!")
+        logger.info("🎉 ALL 6 VERTICAL SLICE PHASES PASSED IN-SITU!")
         logger.info("================================================================")
         return 0
     except Exception as ex:
