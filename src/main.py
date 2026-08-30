@@ -1,9 +1,9 @@
-﻿import logging
+import logging
 import sys
 from datetime import datetime, date, timedelta
 from typing import List, Optional
 from common_lib.config.main_config import load_config
-from src import extract, transform, load
+from common_lib.flow import extract, transform, load
 
 logging.basicConfig(
     level=logging.INFO,
