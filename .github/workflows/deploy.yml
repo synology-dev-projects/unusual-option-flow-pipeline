@@ -47,6 +47,12 @@ jobs:
           echo "📂 Config Path: $COMMON_CONFIG_PATH"
           echo "CONFIG_DIR=$COMMON_CONFIG_PATH" >> $GITHUB_ENV
 
+      # 3.5 Pre-Flight Test Gate
+      - name: Run Pre-Flight Test Gate
+        run: |
+          echo "🧪 Running Unusual-Option-Flow Pytest Suite..."
+          pytest tests/ -v
+
       # 4. DEPLOY CODE (Copy files BEFORE installing deps)
       - name: Sync Code to Project Root
         run: |
