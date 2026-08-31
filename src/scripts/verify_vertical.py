@@ -252,6 +252,11 @@ def verify_step_6_client_ui(config: MainConfig) -> None:
     """[6/7] Client UI: Runs in-situ Node.js DOM test suite for sortable paginated Bloomberg table."""
     logger.info("--- [6/7] Client UI Interactive Table Phase ---")
     import subprocess
+    import shutil
+    if not shutil.which("node"):
+        logger.warning("Node.js not available in environment. Skipping UI DOM test.")
+        return
+
     ui_test_path = PROJECT_ROOT.parent / "quant-pwa" / "frontend" / "tests" / "test_vertical_table_ui.js"
     if not ui_test_path.exists():
         logger.warning(f"UI test script not found at {ui_test_path}. Skipping.")
@@ -269,6 +274,11 @@ def verify_step_7_cockpit_ui(config: MainConfig) -> None:
     """[7/7] Ticker Cockpit: Runs in-situ Node.js DOM test suite for 3-panel dashboard."""
     logger.info("--- [7/7] Ticker Cockpit 3-Panel Dashboard Phase ---")
     import subprocess
+    import shutil
+    if not shutil.which("node"):
+        logger.warning("Node.js not available in environment. Skipping Cockpit DOM test.")
+        return
+
     cockpit_test_path = PROJECT_ROOT.parent / "quant-pwa" / "frontend" / "tests" / "test_cockpit_view.js"
     if not cockpit_test_path.exists():
         logger.warning(f"Cockpit test script not found at {cockpit_test_path}. Skipping.")
