@@ -149,7 +149,7 @@ jobs:
         run: |
           echo "📡 Verifying pipeline module integrity and in-situ vertical slice on runner..."
           cd "${{ env.DEPLOY_DIR }}"
-          export PATH="$(pwd)/.venv/bin:$PATH"
+          source .venv/bin/activate
           python -c "import src.extract, src.transform, src.load; print('✅ unusual-option-flow-pipeline modules import cleanly!')"
           python src/scripts/verify_vertical.py
 
