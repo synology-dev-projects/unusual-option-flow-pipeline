@@ -47,12 +47,6 @@ jobs:
           echo "📂 Config Path: $COMMON_CONFIG_PATH"
           echo "CONFIG_DIR=$COMMON_CONFIG_PATH" >> $GITHUB_ENV
 
-      # 3.5 Pre-Flight Test Gate
-      - name: Run Pre-Flight Test Gate
-        run: |
-          echo "🧪 Running Unusual-Option-Flow Pytest Suite..."
-          pytest tests/ -v
-
       # 4. DEPLOY CODE (Copy files BEFORE installing deps)
       - name: Sync Code to Project Root
         run: |
@@ -68,6 +62,7 @@ jobs:
           cp -r src "$TARGET_PATH/"
           cp -r tests "$TARGET_PATH/"
           cp verify.sh "$TARGET_PATH/"
+          cp pytest.ini "$TARGET_PATH/"
           
           sudo chown -R 1026:100 "$TARGET_PATH"
           chmod -R 775 "$TARGET_PATH"
@@ -117,13 +112,21 @@ jobs:
           elif [ -d "/volume2/homes/rachardv/git-repos/master/common-lib" ]; then
             echo "📦 Installing local common-lib from master..."
             pip install -e /volume2/homes/rachardv/git-repos/master/common-lib
-          elif [ -d "/volume2/homes/rachardv/git-repos/develop/common-lib" ]; then
-            echo "📦 Installing local common-lib from develop..."
-            pip install -e /volume2/homes/rachardv/git-repos/develop/common-lib
+          elif [ -d "/volume2/homes/rachardv/git-repos/develop2/common-lib" ]; then
+            echo "📦 Installing local common-lib from develop2..."
+            pip install -e /volume2/homes/rachardv/git-repos/develop2/common-lib
           fi
           
           # 4. Add to Path (so verify.sh finds it)
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
+
+      # 5.5 IN-SITU TEST GATE
+      - name: Run In-Situ Test Gate
+        run: |
+          echo "🧪 Running Unusual-Option-Flow Pytest Suite in virtualenv..."
+          cd "${{ env.DEPLOY_DIR }}"
+          source .venv/bin/activate
+          pytest tests/ -v
 
       # 6. SECRET INJECTION
       - name: Create Runtime .env File
@@ -152,13 +155,13 @@ jobs:
 
       # 8. MERGE LOGIC
       - name: Auto-Promote to Master
-        if: github.ref_name == 'develop'
+        if: github.ref_name == 'develop2'
         run: |
-          echo "✅ Develop verified. Promoting to Master..."
+          echo "✅ Develop2 verified. Promoting to Master..."
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git fetch origin develop
+          git fetch origin develop2
           git checkout master
           git pull origin master
-          git merge origin/develop --no-ff -m "Auto-merge develop to master [Skip CI]"
+          git merge origin/develop2 --no-ff -m "Auto-merge develop2 to master [Skip CI]"
           git push origin master
