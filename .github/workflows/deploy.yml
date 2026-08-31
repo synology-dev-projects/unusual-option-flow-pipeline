@@ -126,7 +126,7 @@ jobs:
           echo "🧪 Running Unusual-Option-Flow Pytest Suite in virtualenv..."
           cd "${{ env.DEPLOY_DIR }}"
           source .venv/bin/activate
-          pytest tests/ -v
+          python -m pytest tests/ -v
 
       # 6. SECRET INJECTION
       - name: Create Runtime .env File
