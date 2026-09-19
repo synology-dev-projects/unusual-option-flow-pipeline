@@ -257,6 +257,15 @@ def verify_step_6_client_ui(config: MainConfig) -> None:
         logger.warning("Node.js not available in environment. Skipping UI DOM test.")
         return
 
+    try:
+        ver_proc = subprocess.run(["node", "-v"], capture_output=True, text=True)
+        major_ver = int(ver_proc.stdout.strip().lstrip("v").split(".")[0])
+        if major_ver < 14:
+            logger.warning(f"Node.js version {ver_proc.stdout.strip()} is < 14; dynamic ES imports not supported on this runtime. Skipping UI DOM test.")
+            return
+    except Exception:
+        pass
+
     ui_test_path = PROJECT_ROOT.parent / "quant-pwa" / "frontend" / "tests" / "test_vertical_table_ui.js"
     if not ui_test_path.exists():
         logger.warning(f"UI test script not found at {ui_test_path}. Skipping.")
@@ -278,6 +287,15 @@ def verify_step_7_cockpit_ui(config: MainConfig) -> None:
     if not shutil.which("node"):
         logger.warning("Node.js not available in environment. Skipping Cockpit DOM test.")
         return
+
+    try:
+        ver_proc = subprocess.run(["node", "-v"], capture_output=True, text=True)
+        major_ver = int(ver_proc.stdout.strip().lstrip("v").split(".")[0])
+        if major_ver < 14:
+            logger.warning(f"Node.js version {ver_proc.stdout.strip()} is < 14; dynamic ES imports not supported on this runtime. Skipping Cockpit DOM test.")
+            return
+    except Exception:
+        pass
 
     cockpit_test_path = PROJECT_ROOT.parent / "quant-pwa" / "frontend" / "tests" / "test_cockpit_view.js"
     if not cockpit_test_path.exists():
