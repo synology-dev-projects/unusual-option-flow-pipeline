@@ -27,17 +27,17 @@ logger = logging.getLogger("quant.pipeline.flow.daily_incremental")
 def notify_failure(config: Optional[MainConfig], error_message: str) -> None:
     """Dispatches NTFY error notification upon fatal pipeline failure."""
     try:
-        endpoint = getattr(config, "ntfy_endpoint", None) if config else None
-        if endpoint:
-            send_ntfy_notification(
-                endpoint=endpoint,
-                topic="quant_alerts",
-                title="🚨 PIPELINE FAILURE: Options Flow Incremental",
-                message=f"Options Flow Incremental pipeline encountered fatal error:\n{error_message}",
-                priority=5,
-                tags="warning,skull"
-            )
-            logger.info("Sent failure notification to NTFY.")
+        from common_lib.connectors.alerts import resolve_ntfy_endpoint
+        endpoint = resolve_ntfy_endpoint(config)
+        send_ntfy_notification(
+            endpoint=endpoint,
+            topic="quant_alerts",
+            title="🚨 PIPELINE FAILURE: Options Flow Incremental",
+            message=f"Options Flow Incremental pipeline encountered fatal error:\n{error_message}",
+            priority=5,
+            tags="warning,skull"
+        )
+        logger.info("Sent failure notification to NTFY.")
     except Exception as ex:
         logger.error(f"Failed to dispatch NTFY alert: {ex}")
 
