@@ -1,0 +1,11 @@
+name: unusual_option_flow
+display_name: Unusual Options Flow Ingestion
+description: Scrapes and cleans institutional sweeps and options flow from TradingEdge
+version: 1.0.0
+category: flow
+upstream: []
+target_tables:
+  - unusual_option_flow_te
+timeout_sec: 600
+schedule: "15 9 * * 1-5"
+runner: common_lib.flow.runner:run_daily_incremental
