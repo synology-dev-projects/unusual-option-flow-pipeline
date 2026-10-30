@@ -7,5 +7,5 @@ upstream: []
 target_tables:
   - unusual_option_flow_te
 timeout_sec: 600
-schedule: "15 9 * * 1-5"
+schedule: "30 9 * * 1-5"
 runner: common_lib.flow.runner:run_daily_incremental
