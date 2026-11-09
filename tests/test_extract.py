@@ -32,22 +32,24 @@ def test_parse_html_flow_table_details():
     assert records[1]["is_unusual_oi"] == 1
 
 
-@patch("requests.Session.get")
-@patch("requests.Session.post")
-def test_get_authenticated_flow_session(mock_post, mock_get):
+@patch("requests.Session")
+def test_get_authenticated_flow_session(mock_session_cls):
+    mock_session = MagicMock()
+    mock_session.cookies.get_dict.return_value = {".EDGE": "mock_edge_token"}
+    mock_resp = MagicMock()
+    mock_resp.text = '<html><input id="__VIEWSTATE" value="v1"/><input id="__EVENTVALIDATION" value="e1"/></html>'
+    mock_resp.url = "https://flow.tradingedge.club/Login.aspx"
+    mock_session.get.return_value = mock_resp
+    mock_session_cls.return_value = mock_session
+
     mock_config = MagicMock()
     mock_config.te_user_agent = "Mozilla/5.0"
     mock_config.te_option_login_gate = "https://flow.tradingedge.club/Login.aspx"
     mock_config.te_pass = MagicMock(get_secret_value=lambda: "secret_pass")
 
-    mock_resp = MagicMock()
-    mock_resp.text = '<html><input id="__VIEWSTATE" value="v1"/><input id="__EVENTVALIDATION" value="e1"/></html>'
-    mock_resp.url = "https://flow.tradingedge.club/Login.aspx"
-    mock_get.return_value = mock_resp
-
     sess = get_authenticated_flow_session(mock_config)
     assert sess is not None
-    mock_post.assert_called_once()
+    mock_session.post.assert_called_once()
 
 
 @patch("src.extract.get_authenticated_flow_session")
