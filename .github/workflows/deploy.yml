@@ -102,8 +102,17 @@ jobs:
             pip-compile requirements.in --output-file=requirements.txt
           fi
 
-          echo "📦 Installing dependencies..."
-          pip install -r requirements.txt            
+          echo "📦 Evaluating dependencies..."
+          CURRENT_HASH=$(md5sum requirements.txt 2>/dev/null | cut -d' ' -f1 || echo "none")
+          STORED_HASH=$(cat .requirements.hash 2>/dev/null || echo "")
+          if [ "$CURRENT_HASH" != "$STORED_HASH" ]; then
+            echo "📦 requirements.txt changed ($STORED_HASH -> $CURRENT_HASH). Installing dependencies..."
+            pip install --upgrade pip
+            pip install -r requirements.txt
+            echo "$CURRENT_HASH" > .requirements.hash
+          else
+            echo "⚡ requirements.txt unchanged ($CURRENT_HASH). Skipping redundant pip install!"
+          fi            
           
           # Inject local common-lib dependency safely
           if [ -d "../common-lib" ]; then
@@ -152,16 +161,3 @@ jobs:
           source .venv/bin/activate
           python -c "import src.extract, src.transform, src.load; print('✅ unusual-option-flow-pipeline modules import cleanly!')"
           python src/scripts/verify_vertical.py
-
-      # 8. MERGE LOGIC
-      - name: Auto-Promote to Master
-        if: github.ref_name == 'develop2'
-        run: |
-          echo "✅ Develop2 verified. Promoting to Master..."
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-          git fetch origin develop2
-          git checkout master
-          git pull origin master
-          git merge origin/develop2 --no-ff -m "Auto-merge develop2 to master [Skip CI]"
-          git push origin master
